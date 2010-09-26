@@ -4,23 +4,32 @@
 <title>Racknotes Settings</title>
 
 <style>
+
+#title {
+    font-family: sans;
+}
+
 label {
     display:inline-block;
     width:5em;
 }
-form input {
+
+input {
     width: 16em;
 }
+
+#status {
+    display: none;
+}
+
 </style>
 
-</head>
+<script type="text/javascript" src="jquery.js"></script>
+
 <script type="text/javascript">
 
 // Saves options to localStorage.
 function save_options() {
-  var select = document.getElementById("color");
-  var color = select.children[select.selectedIndex].value;
-  localStorage["favorite_color"] = color;
 
   var email = document.getElementById("email").value;
   localStorage["email"] = email;
@@ -28,50 +37,37 @@ function save_options() {
   var password = document.getElementById("password").value;
   localStorage["password"] = password;
 
-  // Update status to let user know options were saved.
-  var status = document.getElementById("status");
-  status.innerHTML = "Options Saved.";
-  setTimeout(function() {
-    status.innerHTML = "";
-  }, 750);
+  $('#status').show().fadeOut(1000);
 }
 
 // Restores select box state to saved value from localStorage.
 function restore_options() {
-  var email = localStorage["email"];
-  if (!email)
-    return;
-  document.getElementById("email").value = email;
+    var email = localStorage["email"];
+    if (!email)
+        return;
+    document.getElementById("email").value = email;
 
-  var password = localStorage["password"];
-  if (password != null)
-      document.getElementById("password").value = password;
-
-  var select = document.getElementById("color");
-  for (var i = 0; i < select.children.length; i++) {
-    var child = select.children[i];
-    if (child.value == favorite) {
-      child.selected = "true";
-      break;
-    }
-  }
-
+    var password = localStorage["password"];
+    if (password != null)
+        document.getElementById("password").value = password;
 }
 
 </script>
 
+</head>
+
 <body onload="restore_options()">
 
-<select id="color" style="display:none">
- <option value="red">red</option>
- <option value="green">green</option>
- <option value="blue">blue</option>
- <option value="yellow">yellow</option>
-</select>
+<h1 id="title">Racknotes Settings</h1>
 
-<br/>
+<p id="info">
+After you save your email and password, you can click on the notes icon
+<img src="img/notepad.png"/>
+to view your notes.
+</p>
 
-<form>
+<p>
+
 <label for="email">Email: </label>
 <input type="input" name="email" id="email" style="">
 
@@ -80,14 +76,14 @@ function restore_options() {
 <label for="password">Password: </label>
 <input type="password" name="password" id="password">
 
-<br/>
-<br/>
+</p>
+
 
 <button onclick="save_options()">Save</button>
 
-</form>
-
-<div id="status"> </div>
+<span id="status">
+Settings were saved.
+</span>
 
 </body>
 </html>
