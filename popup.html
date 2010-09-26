@@ -1,0 +1,404 @@
+
+<style>
+
+body {
+/*
+*/
+  min-width:425px;
+  overflow-x:hidden;
+  font-family:arial;
+  background-color: #FFF;
+}
+
+#title {
+    font-weight: bold;
+}
+
+#add_button_div {
+    width: 87px;
+    height: 12px;
+    border: solid 1px #cdcdcd;
+	background: #F6F6F6;
+	background: -webkit-gradient(linear, left top, left bottom, from(#F6F6F6), to(#B6B6B6));
+    border-radius: 5px;
+    padding: 5px 3px 5px 10px;
+    float: left;
+}
+
+.shiny_btn {
+    height: 12px;
+    border: solid 1px #cdcdcd;
+	background: #F6F6F6;
+	background: -webkit-gradient(linear, left top, left bottom, from(#F6F6F6), to(#B6B6B6));
+    border-radius: 5px;
+    font-size: 0.75em;
+    font-weight: bold;
+    text-align: center;
+    padding: 5px;
+    text-shadow: 1px 1px #FFF;
+    cursor: pointer;
+}
+
+#save_note_btn {
+    float: right;
+}
+
+#scrollbar_div {
+    overflow-y:scroll;
+    overflow-x:hidden;
+    height:320px;
+    border: 1px solid #CCC;
+    margin-top: 5px;
+    border-radius: 5px;
+    position: relative;
+}
+
+#cancel_save_note_link {
+    float: right;
+    color: #0066CC;
+    font-size: 0.75em;
+    margin-right: 10px;
+    margin-top: 5px;
+    text-decoration: none;
+}
+
+#edit_note_footer {
+    padding: 10px 0px 6px 0px;
+}
+
+#search {
+    float: right;
+}
+
+
+#new_subject_lbl {
+    font-weight: bold;
+    font-size: 0.8em;
+}
+
+#new_subject {
+    width: 250px;
+}
+
+#new_body {
+    width: 95%;
+/*
+    width: 100%;
+    margin-right: 20px;
+*/
+}
+
+#notes_table {
+    padding:0;
+}
+
+.note_cont {
+    padding: 4px;
+    border-bottom: 1px solid #F5F5F5;
+    color: #999;
+    cursor: pointer;
+}
+
+.note_subject {
+    margin-right: 4px;
+    font-weight: bold;
+    float: left;
+    color: #000;
+}
+
+.note_body_div {
+    font-size: 0.8em;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    float: left;
+    width: 375px;
+    margin-right: 5px;
+    white-space: nowrap;
+}
+
+.note_body {
+    color: gray;
+    font-size: 0.75em;
+    font-family:Courier, monospace;
+}
+
+/*
+img.delete {
+    float: right;
+}
+*/
+
+a.delete_link {
+    height: 12px;
+    width: 12px;
+    background-image: url("img/delete-grey.png");
+    text-decoration: none;
+    padding: 4px;
+    background-position-y: 7px;
+    background-repeat: no-repeat;
+}
+
+a.delete_link:hover {
+    background-image: url("img/delete-red.png");
+}
+
+#note_added_alert {
+    background-color: #70B859;
+    position: absolute;
+    left: 150px;
+    top: 0px;
+    width: 100px;
+    margin: 0 auto;
+    font-size: 0.8em;
+    color: #FFF;
+    padding: 3px;
+    text-align: center;
+    font-weight: bold;
+    display: none;
+}
+
+#wait_img {
+    position: absolute;
+    left: 190px;
+    top: 30px;
+    display: none;
+}
+
+#edit_note_body {
+    width:100%;
+    height:400px;
+    margin-top: 10px;
+}
+
+#edit_note_subject {
+    width:100%;
+    font-size:1.3em;
+    margin-top: 0px;
+}
+
+</style>
+
+<script type="text/javascript" src="jquery.js"></script>
+
+<script>
+var email = localStorage["email"];
+var password = localStorage["password"];
+
+if (!email || !password) {
+    chrome.tabs.create({url: 'options.html'}); 
+    window.close();
+} else {
+    $(document).ready(function() {
+        $.ajax({
+            url: 'http://apps.rackspace.com/api/0.9.0/' + email + '/notes',
+            username: email,
+            password: password,
+            dataType: 'json',
+            success: function(data) {
+                var notes = data['notes'];
+                notes.sort(sort_by_note_uri);
+                for (i in notes) {
+                    var uri = notes[i]['uri'];
+                    var tokens = uri.split('/');
+                    var id = tokens[tokens.length - 1];
+                    add_skeleton_row(id);
+                }
+                chrome.extension.sendRequest({ notes: notes });
+            }
+        });
+    });
+
+    chrome.tabs.executeScript(null, { file: "content_script.js" });
+
+    chrome.extension.onRequest.addListener(
+        function(request, sender, sendResponse) {
+            sendResponse({});
+            if (request.selected_text) {
+                $('#edit_note_body').val(request.selected_text);
+                $('#main_page').hide();
+                $('#edit_note_page').show();
+            }
+            if (request.url) {
+                $('#edit_note_subject').val(request.url);
+            }
+        }
+    );
+
+}
+
+function sort_by_note_uri(a,b) {
+    aTokens = a['uri'].split('/');
+    bTokens = b['uri'].split('/');
+    a = aTokens[aTokens.length - 1];
+    b = bTokens[bTokens.length - 1];
+    return b - a;
+}
+
+function add_skeleton_row(note_id) {
+    $('#notes_table > tbody').append(
+        '<tr class="note_row" id="note_row_' + note_id + '">'
+        + '<td class="note_cont" id="note_' + note_id + '"></td>'
+        + '</tr>'
+    );
+}
+
+function update_skeleton_row(subject, body, note_id) {
+    $('#note_' + note_id).html(
+        '<div class="note_body_div"><span class="note_subject">' + subject
+        + '</span>' + body + '</div>'
+        + '<a class="delete_link" href="#" onclick="delete_note(' + note_id + '); return false;">'
+        + '&nbsp;'
+        + '</a>'
+    );
+
+    $('#note_' + note_id + ' .note_body_div').attr('title', body);
+
+    $('#note_row_' + note_id).data({
+        subject: subject,
+        body: body,
+        search: (body + '|' + subject).toLowerCase()
+    });
+
+    $('#note_row_' + note_id + ' .note_body_div').click(function() {
+        var data = $('#note_row_' + note_id).data();
+        $('#edit_note_body').val(data.body);
+        $('#edit_note_subject').val(data.subject);
+        $('#edit_note_page').data({ note_id : note_id });
+        show_edit_page();
+    });
+}
+
+function add_row(subject, body, note_id) {
+    $('#notes_table').append(
+        '<tr class="note_row" id="note_row_' + note_id + '">'
+        + '<td class="note_cont" id="note_' + note_id + '">'
+        + '<div class="note_body_div"><span class="note_subject">' + subject
+        + '</span>' + body + '</div>'
+        + '<a class="delete_link" href="#" onclick="delete_note(' + note_id + '); return false;">'
+        + '&nbsp;'
+        //+ '<img src="img/delete-grey.png" class="delete" title="delete note" />'
+        + '</a>'
+        + '</td></tr>'
+    );
+
+    $('#note_' + note_id + ' .note_body_div').attr('title', body);
+
+    $('#note_row_' + note_id).data({
+        subject: subject,
+        body: body,
+        search: (body + '|' + subject).toLowerCase()
+    });
+
+    $('#note_row_' + note_id + ' .note_body_div').click(function() {
+        var data = $('#note_row_' + note_id).data();
+        $('#edit_note_body').val(data.body);
+        $('#edit_note_subject').val(data.subject);
+        $('#edit_note_page').data({ note_id : note_id });
+        show_edit_page();
+    });
+}
+
+function delete_note(note_id) {
+    var subject = $('#note_row_' + note_id).data('subject');
+    var msg = 'Are you sure you want to delete the note [' + subject + '] ?';
+    if (! confirm(msg))
+        return;
+    $.ajax({
+        type: 'DELETE',
+        url: 'http://apps.rackspace.com/api/0.9.0/' + email + '/notes/'
+                + note_id,
+        success: function() {
+            $('#note_row_' + note_id).remove();
+        }
+    });
+}
+
+function save_note() {
+    var subject = $('#edit_note_subject').val();
+    var body = $('#edit_note_body').val();
+    var note_id = $('#edit_note_page').data('note_id');
+    var uri = 'http://apps.rackspace.com/api/0.9.0/' + email + '/notes';
+    var method = 'POST';
+    if (note_id) {
+        uri += '/' + note_id;
+        method = 'PUT';
+    }
+
+    var req = new XMLHttpRequest();
+    req.onreadystatechange = function() {
+        if (req.readyState != 4)
+            return;
+        window.close();
+    }
+    req.open(method, uri, false, email, password);
+    req.send('<note><subject><![CDATA[' + subject
+        + ']]></subject><content><![CDATA[' + body + ']]></content></note>');
+}
+
+function show_edit_page() {
+    $('#main_page').hide();
+    $('#edit_note_page').show();
+}
+
+function cancel_note_edit() {
+    $('#edit_note_page').hide();
+    $('#main_page').show();
+    $('#edit_note_subject').val('');
+    $('#edit_note_body').val('');
+    $('#edit_note_page').data({ note_id : null });
+}
+
+function hide_wait_img() { $('#wait_img').hide() }
+
+</script>
+
+<body>
+
+<div id="main_page">
+    <div class="shiny_btn" id="add_button_div" onclick="show_edit_page()">
+        <img src="img/add-note.png" />
+    </div>
+
+    <input id="search" type="search" results="10" />
+
+    <script>
+        $('#search').keyup(function() {
+            var search_text = $(this).val().toLowerCase();
+            $('.note_row').each(function() {
+                if ($(this).data('search').search(search_text) >= 0) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
+    </script>
+
+    <div style="clear:both; font-size:.001em"> &nbsp; </div>
+
+    <div id="scrollbar_div"> 
+        <table id="notes_table">
+        <tbody>
+        </tbody>
+        </table>
+        <div id="note_added_alert"> Note Added </div>
+        <!--
+        <img id="wait_img" src="img/wait.gif" />
+        -->
+    </div> <!-- scrollbar_div -->
+
+</div> <!-- main_page -->
+
+<div id="edit_note_page" style="display:none">
+    <input id="edit_note_subject" type="text" placeholder="Subject" />
+
+    <textarea id="edit_note_body" name="edit_note_body" placeholder="Click to write note" style="width:100%; height:280px;"></textarea>
+
+    <div id="edit_note_footer">
+        <div id="save_note_btn" onclick="save_note()" class="shiny_btn" style="width:90px">SAVE NOTE</div>
+        <a href="javascript:void(0)" id="cancel_save_note_link" onclick="cancel_note_edit(); return false;">Cancel</a>
+    </div> <!-- edit_note_footer -->
+    <br/>
+</div> <!-- edit_note_page -->
+
+</body>
