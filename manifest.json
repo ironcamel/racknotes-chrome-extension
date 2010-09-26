@@ -1,0 +1,16 @@
+{
+    "name": "Racknotes",
+    "version": "1.0",
+    "description": "Interface to the Rackspace Email Notes application",
+    "options_page": "options.html",
+    "browser_action": {
+        "default_icon": "img/notepad.png",
+        "popup": "popup.html"
+    },
+    "permissions": [
+        "tabs",
+        "http://apps.rackspace.com/",
+        "http://*/*"
+    ],
+    "background_page": "background.html"
+}

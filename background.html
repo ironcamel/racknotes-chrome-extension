@@ -1,0 +1,47 @@
+<html>
+
+<script type="text/javascript" src="jquery.js"></script>
+
+<script>
+
+var email = localStorage["email"];
+var password = localStorage["password"];
+
+function update_view(view, notes) {
+    for (i in notes) {
+        var uri = notes[i]['uri'];
+        $.ajax({
+            url: uri,
+            username: email,
+            password: password,
+            beforeSend: function(xreq) {
+                xreq.setRequestHeader('Cache-Control', 'no-cache');
+            },
+            dataType: 'json',
+            success: function(data) {
+                var note = data['note'];
+                view.update_skeleton_row(
+                    note['subject'], note['content'], note['id']);
+            }
+        });
+    }
+}
+
+chrome.extension.onRequest.addListener(
+    function(request, sender, sendResponse) {
+        if (request.notes) {
+            sendResponse({});
+            var views = chrome.extension.getViews();
+            for (var i = 0; i < views.length; i++) {
+                var view = views[i];
+                if (!view.add_row)
+                    continue;
+                update_view(view, request.notes);
+            }
+        }
+    }
+);
+
+</script>
+
+</html>
