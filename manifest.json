@@ -2,9 +2,15 @@
     "name": "Racknotes",
     "version": "1.0",
     "description": "Interface to the Rackspace Email Notes application",
+    "icons": {
+        "16":  "img/notepad-16x16.png",
+        "32":  "img/notepad-32x32.png",
+        "48":  "img/notepad-48x48.png",
+        "128": "img/notepad-128x128.png"
+    },
     "options_page": "options.html",
     "browser_action": {
-        "default_icon": "img/notepad.png",
+        "default_icon": "img/notepad-16x16.png",
         "popup": "popup.html"
     },
     "permissions": [
