@@ -1,6 +1,6 @@
 {
     "name": "Racknotes",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Open source interface to Rackspace Email Notes",
     "icons": {
         "16":  "img/notepad-16x16.png",
